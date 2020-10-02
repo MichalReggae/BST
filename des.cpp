@@ -8,63 +8,8 @@
 //#using <system.dll>
 
 using namespace std;
-using namespace System::Diagnostics;
 
-string DESClass::hex_to_bin(string hex) {
-	unordered_map<char, string> map_hex_to_bin;
-	map_hex_to_bin['0'] = "0000";
-	map_hex_to_bin['1'] = "0001";
-	map_hex_to_bin['2'] = "0010";
-	map_hex_to_bin['3'] = "0011";
-	map_hex_to_bin['4'] = "0100";
-	map_hex_to_bin['5'] = "0101";
-	map_hex_to_bin['6'] = "0110";
-	map_hex_to_bin['7'] = "0111";
-	map_hex_to_bin['8'] = "1000";
-	map_hex_to_bin['9'] = "1001";
-	map_hex_to_bin['A'] = "1010";
-	map_hex_to_bin['B'] = "1011";
-	map_hex_to_bin['C'] = "1100";
-	map_hex_to_bin['D'] = "1101";
-	map_hex_to_bin['E'] = "1110";
-	map_hex_to_bin['F'] = "1111";
-	string bin = "";
-	for (int i = 0; i < hex.size(); i++) {
-		bin += map_hex_to_bin[hex[i]];
-	}
-	return bin;
-}
 
-string DESClass::bin_to_hex(string s) {
-	unordered_map<string, string> map_bin_to_hex;
-	map_bin_to_hex["0000"] = "0";
-	map_bin_to_hex["0001"] = "1";
-	map_bin_to_hex["0010"] = "2";
-	map_bin_to_hex["0011"] = "3";
-	map_bin_to_hex["0100"] = "4";
-	map_bin_to_hex["0101"] = "5";
-	map_bin_to_hex["0110"] = "6";
-	map_bin_to_hex["0111"] = "7";
-	map_bin_to_hex["1000"] = "8";
-	map_bin_to_hex["1001"] = "9";
-	map_bin_to_hex["1010"] = "A";
-	map_bin_to_hex["1011"] = "B";
-	map_bin_to_hex["1100"] = "C";
-	map_bin_to_hex["1101"] = "D";
-	map_bin_to_hex["1110"] = "E";
-	map_bin_to_hex["1111"] = "F";
-
-	string hex = "";
-
-	for (int i = 0; i < s.length(); i += 4) {
-		string tmp = "";
-		for (int j = 0; j < 4; j++) {
-			tmp += s[i + j];
-		}
-		hex += map_bin_to_hex[tmp];
-	}
-	return hex;
-}
 
 string DESClass::Xor(string a, string b) {
 	string result = "";
@@ -93,9 +38,27 @@ string DESClass::dec_to_bin(int dec) {
 		}
 		mask >>= 1;
 	}
-
 	return binary;
 }
+
+
+string DESClass::input_to_bin(string input) {
+	string output;
+	for (int i = 0; i < input.length(); i++) {
+		output += dec_to_bin((int)input[i]);
+	}
+	return output;
+}
+
+string DESClass::bin_to_char(string bin) {
+	string output;
+	for (int i = 0; i < (bin.length() / 8); i++) {
+		output += (char)bin_to_dec(bin.substr(i * 8, 8));
+	}
+
+	return output;
+}
+
 
 int DESClass::bin_to_dec(string bin) {
 	int temp = 0;
@@ -106,6 +69,7 @@ int DESClass::bin_to_dec(string bin) {
 	}
 	return temp;
 }
+
 
 
 
@@ -191,10 +155,63 @@ void DESClass::generate_key() {
 
 }
 
+string DESClass::add_junk(string input)
+{
+
+
+	return input;
+}
+
+string DESClass::process_data_input(string input)
+{
+	data = input;
+
+	int size = data.length();
+
+
+	int last_packet = size % 8;
+	string output;
+	string temp;
+	for (int i = 0; i < (size / 8); i++) {
+		temp = data.substr(i * 8, 8);
+		output += DES(temp);
+	}
+	string zero;
+	if (last_packet != 0) {
+		zero = data.substr((size / 8) * 8, last_packet);
+		for (int i = 0; i < (8-last_packet); i++) {
+			zero += '0';
+		}
+		zero = DES(zero);
+		output += zero;
+	}
+	return output;
+}
+
+string DESClass::process_data_output(string input)
+{
+	
+	data = input;
+	int last_packet = data.length() % 8;
+	int size = data.length();
+	//int last_packet = size % 8;
+	reverse_key();
+	string output;
+	string temp;
+	for (int i = 0; i < (size / 8); i++) {
+		temp = data.substr(i * 8, 8);
+		output += DES(temp);
+	}
+	string zero;
+	if (last_packet != 0) {
+		output = output.erase((size / 8)+last_packet, 8-last_packet);
+	}
+
+	return output;
+}
 
 string DESClass::DES(string textEdit) {
-	textEdit = hex_to_bin(textEdit);
-	Debug::Write("test");
+	textEdit = input_to_bin(textEdit);
 	int initial_permutation[64] =
 	{ 58,50,42,34,26,18,10,2,
 		60,52,44,36,28,20,12,4,
@@ -328,40 +345,34 @@ string DESClass::DES(string textEdit) {
 	for (int i = 0; i < 64; i++) {
 		ciphertext += combined_text[final_permutation[i] - 1];
 	}
-	ciphertext = bin_to_hex(ciphertext);
+
+	ciphertext = bin_to_char(ciphertext);
 	return ciphertext;
 }
 
-string DESClass::DES_decryption(string crypted) {
+void DESClass::reverse_key() {
 	reverse(round_keys.begin(), round_keys.end());
-	
+}
+string DESClass::DES_decryption(string crypted) {
+	//reverse(round_keys.begin(), round_keys.end());
+
 	return DES(crypted);
 }
 
 /*
 int main()
 {
-	ifstream inputstream("rcvectest.txt");
-	vector <string> round_keys;
-	generate_key(inputstream, round_keys);
+	DESClass des;
+	des.generate_key();
 
-	string textEdit = "ABCDEF1234132DEF";
-	string cipher = DES(textEdit, round_keys);
+	string textEdit = "ABCDEF12";
+	string cipher = des.process_data_input(textEdit);
 	cout << "Cipher: " << cipher << endl;
 
-	string decrypted = DES_decryption(cipher, round_keys);
+	string decrypted = des.process_data_output(cipher);
 
 	cout << "Decrypted word: " << decrypted << endl;
 
-	generate_key(inputstream, round_keys);
-	textEdit = "ABCDEF1234132DEF";
-	cipher = DES(textEdit, round_keys);
-	cout << "Cipher: " << cipher << endl;
 
-	decrypted = DES_decryption(cipher, round_keys);
-
-	cout << "Decrypted word: " << decrypted << endl;
-
-	inputstream.close();
 	return 0;
 }*/

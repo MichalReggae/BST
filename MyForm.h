@@ -96,9 +96,10 @@ namespace DESAPP {
 			// 
 			this->inputText->CharacterCasing = System::Windows::Forms::CharacterCasing::Upper;
 			this->inputText->Location = System::Drawing::Point(157, 68);
-			this->inputText->MaxLength = 16;
+			this->inputText->MaxLength = 200;
+			this->inputText->Multiline = true;
 			this->inputText->Name = L"inputText";
-			this->inputText->Size = System::Drawing::Size(320, 20);
+			this->inputText->Size = System::Drawing::Size(320, 50);
 			this->inputText->TabIndex = 0;
 			this->inputText->TextChanged += gcnew System::EventHandler(this, &MyForm::textBox1_TextChanged);
 			this->inputText->KeyPress += gcnew System::Windows::Forms::KeyPressEventHandler(this, &MyForm::inputText_KeyPress);
@@ -116,7 +117,7 @@ namespace DESAPP {
 			// 
 			// encryptButton
 			// 
-			this->encryptButton->Location = System::Drawing::Point(157, 106);
+			this->encryptButton->Location = System::Drawing::Point(157, 139);
 			this->encryptButton->Name = L"encryptButton";
 			this->encryptButton->Size = System::Drawing::Size(320, 23);
 			this->encryptButton->TabIndex = 2;
@@ -126,8 +127,8 @@ namespace DESAPP {
 			// 
 			// encyptedMessage
 			// 
-			this->encyptedMessage->Location = System::Drawing::Point(157, 195);
-			this->encyptedMessage->MaxLength = 16;
+			this->encyptedMessage->Location = System::Drawing::Point(157, 207);
+			this->encyptedMessage->MaxLength = 200;
 			this->encyptedMessage->Multiline = true;
 			this->encyptedMessage->Name = L"encyptedMessage";
 			this->encyptedMessage->Size = System::Drawing::Size(320, 50);
@@ -137,7 +138,7 @@ namespace DESAPP {
 			// decryptedMessage
 			// 
 			this->decryptedMessage->Location = System::Drawing::Point(157, 294);
-			this->decryptedMessage->MaxLength = 16;
+			this->decryptedMessage->MaxLength = 200;
 			this->decryptedMessage->Multiline = true;
 			this->decryptedMessage->Name = L"decryptedMessage";
 			this->decryptedMessage->Size = System::Drawing::Size(320, 50);
@@ -147,7 +148,7 @@ namespace DESAPP {
 			// 
 			this->label2->AutoSize = true;
 			this->label2->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 11));
-			this->label2->Location = System::Drawing::Point(230, 156);
+			this->label2->Location = System::Drawing::Point(226, 186);
 			this->label2->Name = L"label2";
 			this->label2->Size = System::Drawing::Size(175, 18);
 			this->label2->TabIndex = 5;
@@ -219,7 +220,7 @@ namespace DESAPP {
 			String^ msg = inputText->Text;
 			string msg1 = msclr::interop::marshal_as<string>(msg);
 
-			string output = MyForm::testdes->DES(msg1);
+			string output = MyForm::testdes->process_data_input(msg1);
 			encyptedMessage->Text = msclr::interop::marshal_as<String^>(output);
 		}
 		else {
@@ -230,7 +231,7 @@ namespace DESAPP {
 private: System::Void decryptButton_Click(System::Object^ sender, System::EventArgs^ e) {
 	String^ msg = encyptedMessage->Text;
 	string msg1 = msclr::interop::marshal_as<string>(msg);
-	string output = MyForm::testdes->DES_decryption(msg1);
+	string output = MyForm::testdes->process_data_output(msg1);
 	decryptedMessage->Text = msclr::interop::marshal_as<String^>(output);
 }
 private: System::Void generateKey_Click(System::Object^ sender, System::EventArgs^ e) {
@@ -242,8 +243,14 @@ private: System::Void encyptedMessage_TextChanged(System::Object^ sender, System
 private: System::Void inputText_Validating(System::Object^ sender, System::ComponentModel::CancelEventArgs^ e) {
 	String^ val = inputText->Text;
 	string val1 = msclr::interop::marshal_as<string>(val);
-	if (val1.length() < 16) {
-		errorProvider1->SetError(inputText, "Mniej ni¿ 16 znaków");
+	if (val1.length() == 0 || (val1.length() % 8) != 0) {
+		if(val1.length() == 0){
+		errorProvider1->SetError(inputText, "Pusty ciag");
+		}
+		if((val1.length() % 8) != 0) {
+		errorProvider1->SetError(inputText, "Liczba znaków musi wynoscic wielokrotnosc 8 obecnie: "+val1.length());
+		
+		}
 		e->Cancel = true;
 	}
 	else {
@@ -258,12 +265,6 @@ private: System::Void MyForm_FormClosing(System::Object^ sender, System::Windows
 	Application::Exit();
 }
 private: System::Void inputText_KeyPress(System::Object^ sender, System::Windows::Forms::KeyPressEventArgs^ e) {
-	char c = e->KeyChar;
-	if (!((c >= '0' && c <= '9') || (c >= 'A' && c <= 'F')|| (c >= 'a' && c <= 'f')|| c== (char)8))
-	{
-		e->Handled = true;
-	}
-
 
 }
 };
